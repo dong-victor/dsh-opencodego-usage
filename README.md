@@ -90,6 +90,42 @@ dsh plugin --profile web add link:C:\Users\dongz\.dsh\workspace\dsh-opencodego-u
 - **重启 `dsh web`** 使新的 bundle 层生效（浏览器刷新不够——宿主 loader 在启动时读 bundle 层；`/plugins/<id>/client.js` 是启动后按需加载的）。
 - 卸载：`dsh plugin --profile web remove @dong-victor/dsh-opencodego-usage`，再重启。
 
+## 开源发布与命令行安装
+
+包已按 npm 发布标准整理（`files` 只含 `lib/`、`cordis.patch.yml`、`README.md`、`LICENSE`，无 node_modules/lockfile；`npm pack --dry-run` 已核对）。发布后任何机器都能：
+
+```powershell
+# 安装（会加入 dsh.profile.bundles，重启 dsh web 生效）
+dsh plugin --profile web add @dong-victor/dsh-opencodego-usage
+
+# 卸载
+dsh plugin --profile web remove @dong-victor/dsh-opencodego-usage
+```
+
+发布步骤（一次性）：
+
+```bash
+# 1) 推送到 GitHub（仓库名建议与包名一致）
+cd dsh-opencodego-usage
+git remote add origin git@github.com:<你的账号>/dsh-opencodego-usage.git
+git push -u origin main
+
+# 2) 发布到 npm 官方源（注意：scope @dong-victor 必须是你自己的 npm 用户名/org；
+#    本机 registry 若配了 npmmirror 镜像，发布必须显式走官方源）
+npm login --registry=https://registry.npmjs.org     # 账号必须是 dong-victor
+npm publish --access public --registry=https://registry.npmjs.org
+
+# 之后每次改代码：npm version patch && npm publish --registry=https://registry.npmjs.org
+```
+
+安装侧注意事项：
+
+- **registry**：本机 pnpm/npm 若指向 npmmirror 镜像，新包同步有延迟；想立即安装可在 `dsh plugin` 命令后追加 pnpm 参数：`dsh plugin --profile web add @dong-victor/dsh-opencodego-usage --registry=https://registry.npmjs.org`。
+- **依赖自包含**：包把 `@deepseek-ai/dsh-tools@0.1.0-rc.6` 声明为固定依赖，pnpm 会随包安装到 profile store，不依赖宿主已有的版本。
+- **`dsh.bundle` 自动接线**：安装后 `dsh plugin` 自动把包名写入 `dsh.profile.bundles`（reconcile 机制），无需手动改 profile；`remove` 会自动移除。
+- **版本升级**：`dsh plugin --profile web update`（pnpm update）拉取新版本，重启生效。
+- 已验证（tarball 等价流程）：临时 profile 上 `add file:<tgz>` → 依赖安装 + bundles 自动加入 + `import()` 解析正常 + `remove` 干净卸载。
+
 ## 前置条件
 
 - web profile 已配置 `llm-deepseek.baseURL = https://opencode.ai/zen/go/v1`（即本机现状）；
