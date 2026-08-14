@@ -1,0 +1,9 @@
+# dependencies (installed locally for dev/test; the published package ships
+# no node_modules — consumers resolve @deepseek-ai/dsh-tools from the registry)
+node_modules/
+
+# npm pack artifacts
+*.tgz
+
+# logs
+*.log
