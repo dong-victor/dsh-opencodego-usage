@@ -1,5 +1,5 @@
 # dependencies (installed locally for dev/test; the published package ships
-# no node_modules — consumers resolve @deepseek-ai/dsh-tools from the registry)
+# no node_modules — @deepseek-ai/dsh-tools is a peer dep resolved from the host DSH)
 node_modules/
 
 # npm pack artifacts

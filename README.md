@@ -34,11 +34,11 @@ Authorization: Bearer <key>
 
 ## 架构
 
-双面插件（同 dsh-ssh 模式），零构建依赖、纯 JS、即装即用。运行时唯一的外部依赖是固定版本 `@deepseek-ai/dsh-tools@0.1.0-rc.6`（工具注册契约），随包安装、自包含解析——插件经 `link:` 装到 profile 后，无论从何处被加载都能独立解析，不依赖外部 node_modules：
+双面插件（同 dsh-ssh 模式），零构建依赖、纯 JS、即装即用。运行时唯一的外部依赖是 `@deepseek-ai/dsh-tools`（工具注册契约，peer 依赖 `^0.1.0-rc.6`，与 dsh-ssh 等官方插件声明一致）——由 DSH 宿主按官方版本提供，插件不自带固定旧版副本、不随包维护：
 
 ```
 dsh-opencodego-usage/
-├── package.json          # dsh.bundle.patch + dsh.client 声明（exports["./client"]）+ 固定 dsh-tools 依赖
+├── package.json          # dsh.bundle.patch + dsh.client 声明（exports["./client"]）+ dsh-tools peer 依赖
 ├── cordis.patch.yml      # 向 web profile 行列插入 {id: opencode-go}
 ├── lib/
 │   ├── index.js          # 宿主半面（ESM）：余额服务 + 路由 + 工具 + 提示词
@@ -121,7 +121,7 @@ npm publish --access public --registry=https://registry.npmjs.org
 安装侧注意事项：
 
 - **registry**：本机 pnpm/npm 若指向 npmmirror 镜像，新包同步有延迟；想立即安装可在 `dsh plugin` 命令后追加 pnpm 参数：`dsh plugin --profile web add @dong-victor/dsh-opencodego-usage --registry=https://registry.npmjs.org`。
-- **依赖自包含**：包把 `@deepseek-ai/dsh-tools@0.1.0-rc.6` 声明为固定依赖，pnpm 会随包安装到 profile store，不依赖宿主已有的版本。
+- **依赖随宿主**：`@deepseek-ai/dsh-tools` 声明为 peer 依赖（`^0.1.0-rc.6`，同官方插件），运行时解析到 DSH 宿主安装的官方版本，插件不随包维护固定旧版；本地开发/测试时 npm 会自动装上该 peer。
 - **`dsh.bundle` 自动接线**：安装后 `dsh plugin` 自动把包名写入 `dsh.profile.bundles`（reconcile 机制），无需手动改 profile；`remove` 会自动移除。
 - **版本升级**：`dsh plugin --profile web update`（pnpm update）拉取新版本，重启生效。
 - 已验证（tarball 等价流程）：临时 profile 上 `add file:<tgz>` → 依赖安装 + bundles 自动加入 + `import()` 解析正常 + `remove` 干净卸载。
@@ -140,11 +140,11 @@ npm publish --access public --registry=https://registry.npmjs.org
 
 ## 开发者自测
 
-插件自带固定版本的 `@deepseek-ai/dsh-tools@0.1.0-rc.6` 依赖（自包含解析，不依赖外部 node_modules），测试只需 jsdom：
+插件对 `@deepseek-ai/dsh-tools` 只声明 peer 依赖（`^0.1.0-rc.6`），npm 安装时自动带上官方版本，测试只需 jsdom：
 
 ```bash
 cd dsh-opencodego-usage
-npm install            # 首次（装 jsdom + 固定版 dsh-tools）
+npm install            # 首次（装 jsdom；dsh-tools peer 依赖自动带上）
 npm test               # 两套测试：
                        #  host-boot.test.mjs    模拟 loader 调 apply()：路由/工具/提示词注册、
                        #                         工具 schema 编译、execute/render/dispose（12 项断言）
