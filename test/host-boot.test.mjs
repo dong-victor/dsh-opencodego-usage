@@ -65,9 +65,9 @@ check('tool name is opencode_go_balance', tool?.name === 'opencode_go_balance')
 check('tool has output schema', tool?.output?.schema?.type === 'object' && tool?.output?.schema?.properties?.usage !== undefined)
 
 // The no-key path must short-circuit before any network call and return a
-// structured failure (process.env must not carry DEEPSEEK_API_KEY here).
-const originalKey = process.env.DEEPSEEK_API_KEY
-delete process.env.DEEPSEEK_API_KEY
+// structured failure (process.env must not carry OPENCODE_GO_API_KEY here).
+const originalKey = process.env.OPENCODE_GO_API_KEY
+delete process.env.OPENCODE_GO_API_KEY
 let outcome
 let executeError
 try {
@@ -75,7 +75,7 @@ try {
 } catch (error) {
   executeError = error
 }
-if (originalKey !== undefined) process.env.DEEPSEEK_API_KEY = originalKey
+if (originalKey !== undefined) process.env.OPENCODE_GO_API_KEY = originalKey
 check('tool.execute() resolves without throwing', executeError === undefined, executeError?.message)
 check('tool.execute() returns structured no-key failure', outcome?.ok === false && typeof outcome?.error === 'string' && outcome.error.includes('no API key'))
 
@@ -89,7 +89,7 @@ const renderBlocks = tool?.output?.render?.(
     ok: true,
     cached: false,
     fetchedAt: new Date().toISOString(),
-    source: { baseUrl: 'https://opencode.ai', keyRef: 'DEEPSEEK_API_KEY', keyHint: 'sk-yAE…eLEj' },
+    source: { baseUrl: 'https://opencode.ai', keyRef: 'OPENCODE_GO_API_KEY', keyHint: 'sk-yAE…eLEj' },
     usage: {
       rolling: { status: 'ok', percent: 1, resetsAt: new Date().toISOString() },
       weekly: { status: 'ok', percent: 12, resetsAt: new Date().toISOString() },
