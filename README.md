@@ -66,7 +66,7 @@ dsh-opencodego-usage/
         enabled: true          # 总开关
         announceToAgent: true  # 是否向 agent 声明
         # apiBaseUrl: 'https://opencode.ai'      # 覆盖端点（默认取 llm-deepseek baseURL 的 origin）
-        # apiKeyEnv: 'DEEPSEEK_API_KEY'          # 覆盖凭据引用
+        # apiKeyEnv: 'OPENCODE_GO_API_KEY'          # 覆盖凭据引用
         # cacheTtlMs: 30000
         # timeoutMs: 15000
 ```
@@ -129,7 +129,7 @@ npm publish --access public --registry=https://registry.npmjs.org
 ## 前置条件
 
 - web profile 已配置 `llm-deepseek.baseURL = https://opencode.ai/zen/go/v1`（即本机现状）；
-- `DEEPSEEK_API_KEY` 已通过 credentials 服务保存（`~/.dsh/.credentials.yaml`，Web「模型」设置页写入），且该 key 享有 opencode Go 套餐。
+- `OPENCODE_GO_API_KEY` 已通过 credentials 服务保存（`~/.dsh/.credentials.yaml`，Web「模型」设置页写入），且该 key 享有 opencode Go 套餐。
 
 ## 安全与限制
 

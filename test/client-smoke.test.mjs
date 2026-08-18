@@ -37,7 +37,7 @@ const fakeBalance = {
   ok: true,
   fetchedAt: new Date(now).toISOString(),
   cached: false,
-  source: { baseUrl: 'https://opencode.ai', keyRef: 'DEEPSEEK_API_KEY', keyHint: 'sk-yAE…eLEj' },
+  source: { baseUrl: 'https://opencode.ai', keyRef: 'OPENCODE_GO_API_KEY', keyHint: 'sk-yAE…eLEj' },
   usage: {
     rolling: { status: 'ok', percent: 1, resetsAt: new Date(now + 3600e3).toISOString() },
     weekly: { status: 'ok', percent: 12, resetsAt: new Date(now + 2 * 86400e3).toISOString() },
