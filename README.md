@@ -2,7 +2,7 @@
 
 查看**链接的 opencode Go 套餐余额**的 DSH Web GUI 插件：侧边栏「Go 余额」入口 + 中央列面板，展示 `rolling / weekly / monthly` 三档用量百分比、状态徽章、重置时间与实时倒计时；同时提供 agent 工具 `opencode_go_balance` 与系统提示词声明，让助手也能直接回答「opencode Go 套餐还剩多少」。
 
-完全复用 DSH 已有的 LLM 接线（`llm-deepseek` 设置 + credentials 服务），**无需再配一把密钥**。
+完全复用 DSH 已有的 LLM 接线（`llm-pi-ai` 的 `opencode-go` 路由设置 + credentials 服务），**无需再配一把密钥**——默认密钥引用就是官方 opencode 模型专用的 `OPENCODE_GO_API_KEY`，绝不复用 `llm-deepseek` 的 `DEEPSEEK_API_KEY`。
 
 ## 数据来源
 
@@ -51,7 +51,7 @@ dsh-opencodego-usage/
 | 能力 | 说明 |
 | --- | --- |
 | `GET /api/dsh-opencode-go/balance` | 回环防护（仅本机/同源），`?refresh=1` 绕过缓存；返回 `{ok, fetchedAt, cached, source, usage?, error?}` |
-| 密钥/端点解析 | 默认取 `settings.get('llm-deepseek')` 的 `baseURL`（取 origin）与 `apiKeyEnv`；credentials 服务 `resolve(ref)`，`process.env` 兜底；可用插件 config 覆盖 |
+| 密钥/端点解析 | 默认取 `settings.get('llm-pi-ai')` 的 `providers.opencode-go` 路由 `baseURL`（取 origin）与 `apiKeyEnv`（即 `OPENCODE_GO_API_KEY`），回退到插件自带默认 `https://opencode.ai` / `OPENCODE_GO_API_KEY`；credentials 服务 `resolve(ref)`，`process.env` 兜底；绝不继承 `llm-deepseek.apiKeyEnv`（其 schema 默认是 `DEEPSEEK_API_KEY`）；可用插件 config 覆盖 |
 | 缓存 | 内存 30s TTL（可配 `cacheTtlMs`），缓存命中不触发上游请求 |
 | 工具 | `opencode_go_balance`（dsh-tools `defineTool`，结构化 schema + markdown render） |
 | 提示词 | `plugin:dsh-opencode-go` 段（order 150），声明能力与限制 |
@@ -65,8 +65,8 @@ dsh-opencodego-usage/
       config:
         enabled: true          # 总开关
         announceToAgent: true  # 是否向 agent 声明
-        # apiBaseUrl: 'https://opencode.ai'      # 覆盖端点（默认取 llm-deepseek baseURL 的 origin）
-        # apiKeyEnv: 'OPENCODE_GO_API_KEY'          # 覆盖凭据引用
+        # apiBaseUrl: 'https://opencode.ai'      # 覆盖端点（默认取 opencode-go 路由 baseURL 的 origin，再回退插件默认）
+        # apiKeyEnv: 'OPENCODE_GO_API_KEY'          # 覆盖凭据引用（默认同左，永不取 llm-deepseek 的 DEEPSEEK_API_KEY）
         # cacheTtlMs: 30000
         # timeoutMs: 15000
 ```
@@ -128,8 +128,8 @@ npm publish --access public --registry=https://registry.npmjs.org
 
 ## 前置条件
 
-- web profile 已配置 `llm-deepseek.baseURL = https://opencode.ai/zen/go/v1`（即本机现状）；
-- `OPENCODE_GO_API_KEY` 已通过 credentials 服务保存（`~/.dsh/.credentials.yaml`，Web「模型」设置页写入），且该 key 享有 opencode Go 套餐。
+- 密钥通过 `OPENCODE_GO_API_KEY` 凭据引用提供：已通过 credentials 服务保存（`~/.dsh/.credentials.yaml`，Web「模型」设置页写入），或由启动环境导出；该 key 享有 opencode Go 套餐、是官方 opencode 模型专用密钥（不是 `DEEPSEEK_API_KEY`）。
+- 端点默认 `https://opencode.ai`；若 `llm-pi-ai` 的 `opencode-go` 路由配置了 `baseURL`，则取其 origin。
 
 ## 安全与限制
 

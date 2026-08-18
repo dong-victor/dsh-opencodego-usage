@@ -7,7 +7,7 @@
  *
  * Usage: node test/host-boot.test.mjs
  */
-import { apply } from '../lib/index.js'
+import { apply, resolveSource, LLM_SETTINGS_NAMESPACE, PI_AI_SETTINGS_NAMESPACE, OPENCODE_GO_PROVIDER } from '../lib/index.js'
 
 let failures = 0
 function check(name, condition, detail) {
@@ -102,6 +102,48 @@ check('render produces a text block', Array.isArray(renderBlocks) && typeof rend
 // Disposal path: the effect disposer must run the route/tool/section disposers.
 for (const dispose of disposers.splice(0)) dispose()
 check('disposers run without throwing', true)
+
+// Key-ref resolution regression: when the llm-deepseek namespace schema-defaults
+// apiKeyEnv to DEEPSEEK_API_KEY (its LLM key), resolveSource must still pick the
+// dedicated OPENCODE_GO_API_KEY — via the llm-pi-ai opencode-go route when
+// present, or the plugin default. It must NEVER inherit DEEPSEEK_API_KEY.
+{
+  const settings = {
+    get(ns) {
+      if (ns === LLM_SETTINGS_NAMESPACE) return { apiKeyEnv: 'DEEPSEEK_API_KEY', baseURL: 'https://api.deepseek.com' }
+      if (ns === PI_AI_SETTINGS_NAMESPACE) return { providers: { [OPENCODE_GO_PROVIDER]: { apiKeyEnv: 'OPENCODE_GO_API_KEY', baseURL: 'https://opencode.ai/zen/go/v1' } } }
+      return undefined
+    },
+  }
+  const credentials = { resolve: async () => ({ value: 'sk-test-opencode-go' }) }
+  const ctx = { get: (key) => (key === 'settings' ? settings : key === 'credentials' ? credentials : undefined) }
+  const prev = process.env.OPENCODE_GO_API_KEY
+  delete process.env.OPENCODE_GO_API_KEY
+  let src
+  try {
+    src = await resolveSource(ctx, {})
+  } finally {
+    if (prev !== undefined) process.env.OPENCODE_GO_API_KEY = prev
+  }
+  check('resolveSource picks OPENCODE_GO_API_KEY over llm-deepseek DEEPSEEK_API_KEY default', src?.keyRef === 'OPENCODE_GO_API_KEY', src?.keyRef)
+  check('resolveSource credits the opencode-go route key', src?.apiKey === 'sk-test-opencode-go', src?.apiKey)
+  check('resolveSource takes base origin from opencode-go route', src?.baseUrl === 'https://opencode.ai', src?.baseUrl)
+
+  // Without any llm-pi-ai route, the plugin default must still be OPENCODE_GO_API_KEY.
+  const emptySettings = {
+    get(ns) {
+      if (ns === LLM_SETTINGS_NAMESPACE) return { apiKeyEnv: 'DEEPSEEK_API_KEY' }
+      return undefined
+    },
+  }
+  const emptyCtx = { get: (key) => (key === 'settings' ? emptySettings : key === 'credentials' ? credentials : undefined) }
+  const src2 = await resolveSource(emptyCtx, {})
+  check('resolveSource falls back to default OPENCODE_GO_API_KEY without routes', src2?.keyRef === 'OPENCODE_GO_API_KEY', src2?.keyRef)
+
+  // Explicit config apiKeyEnv still wins over everything.
+  const src3 = await resolveSource(ctx, { apiKeyEnv: 'CUSTOM_ZEN_KEY' })
+  check('explicit config apiKeyEnv overrides wiring', src3?.keyRef === 'CUSTOM_ZEN_KEY', src3?.keyRef)
+}
 
 console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`)
 process.exit(failures === 0 ? 0 : 1)
